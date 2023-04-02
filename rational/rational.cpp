@@ -180,29 +180,37 @@ bool operator>=(const Rational& first, const Rational& other) {
 }
 
 std::istream& operator>>(std::istream& is, Rational& first) {
-  int chisl = 0;
-  int znam = 0;
-  bool minus_chisl = false;
-  bool minus_znam = false;
-  bool slash = false;
-  std::string str;
-  std::cin >> str;
-  int size = str.size();
-  for (int i = 0; i < size; ++i) {
-    char one_symbol = str[i];
+  int n = 0;
+  int d = 0;
+  bool haveMinusN = false;
+  bool haveMinusD = false;
+  bool haveSlash = false;
+  
+  std::string num_str;
+  std::cin >> num_str;
+  
+  int numSize = num_str.size();
+  
+  for (int i = 0; i < numSize; ++i) {
+    char one_symbol = num_str[i];
     if (one_symbol == '/') {
-      slash = true;
+      haveSlash = true;
     } else if (one_symbol == '-') {
-      (!slash ? (minus_chisl = true) : (minus_znam = true));
+      (!haveSlash ? (haveMinusN = true) : (haveMinusD = true));
     } else if (('0' <= one_symbol) && (one_symbol <= '9')) {
-      (slash ? ({znam *= 10; znam += str[i] - '0';}) : ({chisl *= 10; chisl += str[i] - '0';}));
+      (!haveSlash ? ({n *= 10; n += num_str[i] - '0';}) : ({d *= 10; d += num_str[i] - '0';}));
     }
   }
-  (minus_chisl ? chisl = -chisl : chisl = chisl);
-  (minus_znam ? znam = -znam : znam = znam);
+  
+  n = (haveMinusN ? (-n) : (n));
+  d = (haveMinusD ? (-d) : (d));
 
-  first.SetNumerator(chisl, false);
-  first.SetDenominator((slash ? znam : 1), false);
+  if (d == 0) {
+    throw RationalDivisionByZero{};
+  }
+
+  first.SetNumerator(n, false);
+  first.SetDenominator((haveSlash ? (d) : (1)), false);
   first.reduce();
   return is;
 }
