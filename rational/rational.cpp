@@ -10,102 +10,95 @@ int GCD(int a, int b) {
     return a;
   }
   if (a > b) {
-    return GCD(a%b, b);
+    return GCD(a % b, b);
   }
-  return GCD(a, b%a);
+  return GCD(a, b % a);
 }
 
-void Rational::reduce() {
-  int gcd = GCD(p, q);
-  p /= gcd;
-  q /= gcd;
+void Rational::Reduce() {
+  int gcd = GCD(p_, q_);
+  p_ /= gcd;
+  q_ /= gcd;
+
+  if (q_ < 0) {
+    q_ = -q_;
+    p_ = -p_;
+  }
 }
 
-Rational::Rational(int p = 0, int q = 1) { // NOLINT
+Rational::Rational() : p_(0), q_(1) {
+}
+
+Rational::Rational(int p) {  // NOLINT
+  this->p_ = p;
+  this->q_ = 1;
+}
+
+Rational::Rational(int p, int q) {  // NOLINT
   if (q == 0) {
     throw RationalDivisionByZero{};
-  } else {
-    this->p = p;
-    this->q = q;
-    reduce();
-    if (q < 0) {
-      this->q = -q;
-      this->p = -p;
-    }
   }
-  
+  p_ = p;
+  q_ = q;
+  Reduce();
+}
+
+Rational::Rational(const Rational& r) {
+  p_ = r.p_;
+  q_ = r.q_;
 }
 
 int Rational::GetNumerator() const {
-  return p;
+  return p_;
 }
 
 int Rational::GetDenominator() const {
-  return q;
+  return q_;
 }
 
-void Rational::SetNumerator(int p, bool reduce_this = true) {
-  this->p = p;
-  if (reduce_this) {
-    reduce();
-  }
+void Rational::SetNumerator(int p) {
+  p_ = p;
+  Reduce();
 }
 
-void Rational::SetDenominator(int q, bool reduce_this = true) {
+void Rational::SetDenominator(int q) {
   if (q == 0) {
     throw RationalDivisionByZero{};
-    return;
   }
-  this->q = q;
-  if (q < 0) {
-    this->q = -q;
-    this->p = -p;
-  }
-  if (reduce_this) {
-    reduce();
-  }
+
+  q_ = q;
+  Reduce();
 }
 
 Rational& Rational::operator+=(const Rational& other) {
-  p = (p * other.q) + (other.p * q);
-  q = q * other.q;
-  reduce();
-  return *this; 
+  p_ = (p_ * other.q_) + (other.p_ * q_);
+  q_ = q_ * other.q_;
+  Reduce();
+  return *this;
 }
 
 Rational& Rational::operator-=(const Rational& other) {
-  p = (p * other.q) - (other.p * q);
-  q = q * other.q;
-  reduce();
+  p_ = (p_ * other.q_) - (other.p_ * q_);
+  q_ = q_ * other.q_;
+  Reduce();
   return *this;
 }
 
 Rational& Rational::operator*=(const Rational& other) {
-  p = p * other.p;
-  q = q * other.q;
-  reduce();
+  p_ = p_ * other.p_;
+  q_ = q_ * other.q_;
+  Reduce();
   return *this;
 }
 
 Rational& Rational::operator/=(const Rational& other) {
-  if (p == 0) {
+  if (other.p_ == 0) {
     throw RationalDivisionByZero{};
-  } else {
-    p = p * other.q;
-    q = q * other.p;
-    reduce();
-    return *this;
   }
-} 
-
-Rational Rational::operator+() {
+  p_ = p_ * other.q_;
+  q_ = q_ * other.p_;
+  Reduce();
   return *this;
-}
-
-Rational Rational::operator-() {
-  Rational copy = *this;
-  copy.p = -copy.p;
-  return copy;
 }
 
 Rational& Rational::operator++() {
@@ -113,13 +106,13 @@ Rational& Rational::operator++() {
   return *this;
 }
 
-Rational Rational::operator++(int) { 
+Rational Rational::operator++(int) {
   Rational copy = *this;
   ++*this;
   return copy;
 }
 
-Rational& Rational::operator--() { 
+Rational& Rational::operator--() {
   *this -= 1;
   return *this;
 }
@@ -130,6 +123,15 @@ Rational Rational::operator--(int) {
   return copy;
 }
 
+Rational operator+(Rational first) {
+  return first;
+}
+
+Rational operator-(Rational first) {
+  int p = first.GetNumerator();
+  first.SetNumerator(-p);
+  return first;
+}
 
 Rational operator+(const Rational& first, const Rational& other) {
   Rational copy = first;
@@ -150,17 +152,20 @@ Rational operator*(const Rational& first, const Rational& other) {
 }
 
 Rational operator/(const Rational& first, const Rational& other) {
+  if (other.GetNumerator() == 0) {
+    throw RationalDivisionByZero{};
+  }
   Rational copy = first;
   copy /= other;
   return copy;
 }
 
 bool operator<(const Rational& first, const Rational& other) {
-  return ((first.GetNumerator() * other.GetDenominator()) < (other.GetNumerator() * first.GetDenominator()) ? true : false);
+  return (first.GetNumerator() * other.GetDenominator()) < (other.GetNumerator() * first.GetDenominator());
 }
 
 bool operator>(const Rational& first, const Rational& other) {
-  return ((first.GetNumerator() * other.GetDenominator()) > (other.GetNumerator() * first.GetDenominator()) ? true : false);
+  return (first.GetNumerator() * other.GetDenominator()) > (other.GetNumerator() * first.GetDenominator());
 }
 
 bool operator==(const Rational& first, const Rational& other) {
@@ -182,36 +187,48 @@ bool operator>=(const Rational& first, const Rational& other) {
 std::istream& operator>>(std::istream& is, Rational& first) {
   int n = 0;
   int d = 0;
-  bool haveMinusN = false;
-  bool haveMinusD = false;
-  bool haveSlash = false;
-  
+  bool have_minus_n = false;
+  bool have_minus_d = false;
+  bool have_slash = false;
+
   std::string num_str;
-  std::cin >> num_str;
-  
-  int numSize = num_str.size();
-  
-  for (int i = 0; i < numSize; ++i) {
+  is >> num_str;
+
+  int num_size = num_str.size();
+
+  for (int i = 0; i < num_size; ++i) {
     char one_symbol = num_str[i];
     if (one_symbol == '/') {
-      haveSlash = true;
+      have_slash = true;
     } else if (one_symbol == '-') {
-      (!haveSlash ? (haveMinusN = true) : (haveMinusD = true));
+      if (!have_slash) {
+        have_minus_n = true;
+      } else {
+        have_minus_d = true;
+      }
     } else if (('0' <= one_symbol) && (one_symbol <= '9')) {
-      (!haveSlash ? ({n *= 10; n += num_str[i] - '0';}) : ({d *= 10; d += num_str[i] - '0';}));
+      if (!have_slash) {
+        n *= 10;
+        n += num_str[i] - '0';
+      } else {
+        d *= 10;
+        d += num_str[i] - '0';
+      }
     }
   }
-  
-  n = (haveMinusN ? (-n) : (n));
-  d = (haveMinusD ? (-d) : (d));
 
-  if (d == 0) {
+  n = (have_minus_n ? (-n) : (n));
+  d = (have_minus_d ? (-d) : (d));
+
+  if ((d == 0) && (have_slash)) {
     throw RationalDivisionByZero{};
   }
 
-  first.SetNumerator(n, false);
-  first.SetDenominator((haveSlash ? (d) : (1)), false);
-  first.reduce();
+  first.SetNumerator(1);
+  first.SetDenominator(1);
+  first.SetNumerator(n);
+  first.SetDenominator((have_slash ? (d) : (1)));
+
   return is;
 }
 
@@ -221,15 +238,6 @@ std::ostream& operator<<(std::ostream& os, const Rational& first) {
   } else {
     os << first.GetNumerator() << "/" << first.GetDenominator();
   }
-  os << "\n";
-  return os;
-}
 
-int main() {
-  Rational x = 5;        // дробь 5/1
-  std::cout << x;        // вывод: 5
-  x.SetDenominator(15);  // дробь 1/3 (5/15 сократилась)
-  std::cout << x;        // вывод: 1/3
-  std::cin >> x;
-  std::cout << x;
+  return os;
 }

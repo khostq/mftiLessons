@@ -2,6 +2,7 @@
 #define RATIONAL
 #include <iostream>
 #include <numeric>
+#include <string>
 #include <stdexcept>
 
 class RationalDivisionByZero : public std::runtime_error {
@@ -10,40 +11,52 @@ class RationalDivisionByZero : public std::runtime_error {
   }
 };
 
-
 class Rational {
-private:
-  int p;
-  int q;
-public:
-  void reduce();
-  Rational(int, int);
-  int GetNumerator() const;    
+ public:
+  Rational();
+  Rational(int p);         // NOLINT
+  Rational(int p, int q);  // NOLINT
+  Rational(const Rational& r);
+
+  int GetNumerator() const;
   int GetDenominator() const;
-  void SetNumerator(int, bool);
-  void SetDenominator(int, bool);
-  Rational& operator+=(const Rational&);
-  Rational& operator-=(const Rational&);
-  Rational& operator*=(const Rational&);
-  Rational& operator/=(const Rational&);
-  Rational operator+();
-  Rational operator-();
+
+  void SetNumerator(int);
+  void SetDenominator(int);
+
+  Rational& operator+=(const Rational& other);
+  Rational& operator-=(const Rational& other);
+  Rational& operator*=(const Rational& other);
+  Rational& operator/=(const Rational& other);
+
   Rational& operator++();
-  Rational operator++(int);
   Rational& operator--();
+
+  Rational operator++(int);
   Rational operator--(int);
+
+ private:
+  int p_;
+  int q_;
+  void Reduce();
 };
-Rational operator+(const Rational&, const Rational&);
-Rational operator-(const Rational&, const Rational&);
-Rational operator*(const Rational&, const Rational&);
-Rational operator/(const Rational&, const Rational&);
-bool operator<(const Rational&, const Rational&);
-bool operator>(const Rational&, const Rational&);
-bool operator==(const Rational&, const Rational&);
-bool operator!=(const Rational&, const Rational&);
-bool operator<=(const Rational&, const Rational&);
-bool operator>=(const Rational&, const Rational&);
-std::istream& operator>>(std::istream&, Rational&);
-std::ostream& operator<<(std::ostream&, const Rational&);
+
+Rational operator+(Rational first);
+Rational operator-(Rational first);
+
+Rational operator+(const Rational& first, const Rational& other);
+Rational operator-(const Rational& first, const Rational& other);
+Rational operator*(const Rational& first, const Rational& other);
+Rational operator/(const Rational& first, const Rational& other);
+
+bool operator<(const Rational& first, const Rational& other);
+bool operator>(const Rational& first, const Rational& other);
+bool operator==(const Rational& first, const Rational& other);
+bool operator!=(const Rational& first, const Rational& other);
+bool operator<=(const Rational& first, const Rational& other);
+bool operator>=(const Rational& first, const Rational& other);
+
+std::istream& operator>>(std::istream& is, Rational& first);
+std::ostream& operator<<(std::ostream& os, const Rational& first);
 
 #endif
